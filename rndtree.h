@@ -14,7 +14,6 @@ using namespace std;
 */
 #define WRITE_NODE_COMMAND 'W'
 #define UP_COMMAND 'U'
-#define DOWN_COMMAND 'D'
 
 struct Node
 {

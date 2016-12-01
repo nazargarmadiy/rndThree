@@ -71,13 +71,13 @@ void RndTree::Serialize(Node *pHead, string *pCommand)
     pCommand->append(SUB_COMMAND_SEPARATOR);
     for(int i = 0; i < pHead->children.size(); i++)
     {
-        pCommand->append(string(1, DOWN_COMMAND));
-        pCommand->append(SUB_COMMAND_SEPARATOR);
         pCommand->append(COMMAND_SEPARATOR);
         Serialize(pHead->children[i], pCommand);
         pCommand->append(string(1, UP_COMMAND));
+
         pCommand->append(COMMAND_SEPARATOR);
     }
+
 }
 
 string RndTree::Serialize()
@@ -86,14 +86,14 @@ string RndTree::Serialize()
     if(!pRoot)
         return *command;
     Serialize(pRoot, command);
+    command->append(COMMAND_SEPARATOR);
     command->append(END_COMMAND);
     return *command;
 }
 
 Node* RndTree::BuildFrame(string *command, Node **pCurr, Node **pParr)
-{
+{    
     Node* pRoot;
-
         while(command->compare(END_COMMAND))
         {
             int index = command->find_first_of(COMMAND_SEPARATOR);
@@ -107,28 +107,37 @@ Node* RndTree::BuildFrame(string *command, Node **pCurr, Node **pParr)
                     subCommand.erase(0, 2);
                     int tmpIndex = subCommand.find(SUB_COMMAND_SEPARATOR);
                     string nodeValue =subCommand.substr(0, tmpIndex);
-
                     Node* pNew = new Node(nodeValue);
-                    pRoot = pNew;
-                    *pCurr = pNew;
-
-                    subCommand.erase(0, tmpIndex + 1);
-                    commandSym = subCommand[0];
-                    if(commandSym == DOWN_COMMAND)//get deeper
+                    if(*pCurr)
                     {
-                        pNew->children.push_back(nullptr);
-                        BuildFrame(command, &(pNew->children.back()), &pNew);
+                        (*pCurr)->children.push_back(pNew);
+                        subCommand.erase(0, tmpIndex + 1);
+                        if(subCommand.length())
+                        {
+                            commandSym = subCommand[0];
+                            if(commandSym == UP_COMMAND)//go to the upper level
+                            {
+                                break;
+                            }
+                        }
+                        BuildFrame(command, &(*pCurr)->children.back(), pCurr);
                         break;
                     }
-                    else if(commandSym == UP_COMMAND)//go to the upper level
+                    else
+                    {
+                        pRoot = pNew;
+                        *pCurr = pNew;
+                    }
+                    subCommand.erase(0, tmpIndex + 1);
+                    if(!subCommand.length())
+                    {
+                        break;
+                    }
+                    commandSym = subCommand[0];
+                    if(commandSym == UP_COMMAND)//go to the upper level
                     {
                         return nullptr;
                     }
-                }
-                case DOWN_COMMAND://go to child
-                {
-                    (*pCurr)->children.push_back(nullptr);
-                    BuildFrame(command, &(*pCurr)->children.back(), pCurr);
                     break;
                 }
                 case UP_COMMAND://return to upper level
