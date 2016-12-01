@@ -3,7 +3,7 @@
 Node::Node(string _val)
 {
     value = _val;
-    childs = vector<Node*>();
+    children = vector<Node*>();
 }
 
 RndTree::RndTree(){}
@@ -11,18 +11,18 @@ RndTree::RndTree(){}
 RndTree::~RndTree()
 {
     if(!pRoot)
-        pRoot->childs.clear();
+        pRoot->children.clear();
 }
 
 Node* RndTree::Add(string val, Node *pDest)
 {
     Node *newNode = new Node(val);
     if(pDest)
-        pDest->childs.push_back(newNode);
+        pDest->children.push_back(newNode);
     else
     {
         if(pRoot)
-            newNode->childs.push_back(pRoot);
+            newNode->children.push_back(pRoot);
         pRoot = newNode;
     }
     return newNode;
@@ -37,8 +37,8 @@ Node* RndTree::GetChild(Node *pParent, int num)
 {
     if(!pRoot)
         return nullptr;
-    if(!pParent && pRoot->childs.size() > num)
-        return pParent->childs[num];
+    if(!pParent && pRoot->children.size() > num)
+        return pParent->children[num];
     return nullptr;
 }
 
@@ -51,8 +51,8 @@ Node* RndTree::FindNode(string val, Node *pHead)
     if(!pHead->value.compare(val))
         return pHead;
     Node* pFind = nullptr;
-    vector<Node*>::iterator it = pHead->childs.begin();
-    while (it != pHead->childs.end() && !pFind)
+    vector<Node*>::iterator it = pHead->children.begin();
+    while (it != pHead->children.end() && !pFind)
     {
         pFind = FindNode(val, *it);
         it++;
@@ -61,20 +61,20 @@ Node* RndTree::FindNode(string val, Node *pHead)
 }
 
 
-void RndTree::Serialize(Node *pHead, Node **pParrent, string *pCommand)
+void RndTree::Serialize(Node *pHead, string *pCommand)
 {
     if(!pHead)
         return;
     pCommand->append(string(1, WRITE_NODE_COMMAND));
     pCommand->append(":");
     pCommand->append(pHead->value);
-    pCommand->append(";");
-    for(int i = 0; i < pHead->childs.size(); i++)
+    pCommand->append(SUB_COMMAND_SEPARATOR);
+    for(int i = 0; i < pHead->children.size(); i++)
     {
         pCommand->append(string(1, DOWN_COMMAND));
-        pCommand->append(";");
+        pCommand->append(SUB_COMMAND_SEPARATOR);
         pCommand->append(COMMAND_SEPARATOR);
-        Serialize(pHead->childs[i], nullptr, pCommand);
+        Serialize(pHead->children[i], pCommand);
         pCommand->append(string(1, UP_COMMAND));
         pCommand->append(COMMAND_SEPARATOR);
     }
@@ -85,15 +85,16 @@ string RndTree::Serialize()
     string* command = new string();
     if(!pRoot)
         return *command;
-    Serialize(pRoot, &pRoot, command);
-    command->append(END_COMMANDS);
+    Serialize(pRoot, command);
+    command->append(END_COMMAND);
     return *command;
 }
 
 Node* RndTree::BuildFrame(string *command, Node **pCurr, Node **pParr)
 {
     Node* pRoot;
-        while(command->compare(END_COMMANDS))
+
+        while(command->compare(END_COMMAND))
         {
             int index = command->find_first_of(COMMAND_SEPARATOR);
             string subCommand = command->substr(0, index);
@@ -104,7 +105,7 @@ Node* RndTree::BuildFrame(string *command, Node **pCurr, Node **pParr)
                 case WRITE_NODE_COMMAND://write new node
                 {
                     subCommand.erase(0, 2);
-                    int tmpIndex = subCommand.find(";");
+                    int tmpIndex = subCommand.find(SUB_COMMAND_SEPARATOR);
                     string nodeValue =subCommand.substr(0, tmpIndex);
 
                     Node* pNew = new Node(nodeValue);
@@ -115,8 +116,8 @@ Node* RndTree::BuildFrame(string *command, Node **pCurr, Node **pParr)
                     commandSym = subCommand[0];
                     if(commandSym == DOWN_COMMAND)//get deeper
                     {
-                        pNew->childs.push_back(nullptr);
-                        BuildFrame(command, &(pNew->childs.back()), &pNew);
+                        pNew->children.push_back(nullptr);
+                        BuildFrame(command, &(pNew->children.back()), &pNew);
                         break;
                     }
                     else if(commandSym == UP_COMMAND)//go to the upper level
@@ -126,8 +127,8 @@ Node* RndTree::BuildFrame(string *command, Node **pCurr, Node **pParr)
                 }
                 case DOWN_COMMAND://go to child
                 {
-                    (*pCurr)->childs.push_back(nullptr);
-                    BuildFrame(command, &(*pCurr)->childs.back(), pCurr);
+                    (*pCurr)->children.push_back(nullptr);
+                    BuildFrame(command, &(*pCurr)->children.back(), pCurr);
                     break;
                 }
                 case UP_COMMAND://return to upper level
@@ -170,10 +171,10 @@ void RndTree::PrettyPrint(Node *pHead, int *level, bool last)
     }
     printf("%s>%s\n",prefiks.c_str(), pHead->value.c_str());
     (*level)++;
-    vector<Node*>::iterator it = pHead->childs.begin();
-    while (it != pHead->childs.end())
+    vector<Node*>::iterator it = pHead->children.begin();
+    while (it != pHead->children.end())
     {
-        bool bTmp = (it == (pHead->childs.end() - 1));
+        bool bTmp = (it == (pHead->children.end() - 1));
         PrettyPrint(*it, level, bTmp);
         it++;
     }

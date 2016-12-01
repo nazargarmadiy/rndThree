@@ -26,7 +26,7 @@ int main()
     tree.PrettyPrint();*/
 
     ThreeTest test;
-    int count = 20;
+    int count = 25;
     RndTree *pThree = test.CreateRndThree(&count);
     pThree->PrettyPrint();
 

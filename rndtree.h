@@ -8,7 +8,7 @@ using namespace std;
 
 #define COMMAND_SEPARATOR "\n"
 #define SUB_COMMAND_SEPARATOR ";"
-#define END_COMMANDS "end;"
+#define END_COMMAND "end;"
 /*
 * comands must be represented only one ASCII sumbol!!!
 */
@@ -19,7 +19,7 @@ using namespace std;
 struct Node
 {
     string value;
-    vector<Node*> childs;
+    vector<Node*> children;
     Node(string _val);
 };
 
@@ -27,7 +27,7 @@ class RndTree
 {
 private:
     Node* pRoot = nullptr;
-    void Serialize(Node* pHead, Node **pParrent, string *pCommand);
+    void Serialize(Node* pHead, string *pCommand);
     Node* BuildFrame(string *command, Node **pCurr, Node **pParr);
 
 public:
