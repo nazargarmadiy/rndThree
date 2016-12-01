@@ -26,13 +26,17 @@ int main()
     tree.PrettyPrint();*/
 
     ThreeTest test;
-    int count = 33;
+    int count = 20;
     RndTree *pThree = test.CreateRndThree(&count);
     pThree->PrettyPrint();
 
-    string comm = pThree->GetCommand();
+    string comm = pThree->Serialize();
     RndTree unboxed;
-    unboxed.BuildTree(comm);
+    unboxed.Deserialize(comm);
     unboxed.PrettyPrint();
+
+    string unboxedCommand = unboxed.Serialize();
+    printf("\nTest: serialized objects are %s.\n", comm.compare(unboxedCommand) ? "different" : "same");
+    //printf("\n%s", comm.c_str());
     return 0;
 }

@@ -6,10 +6,7 @@ Node::Node(string _val)
     childs = vector<Node*>();
 }
 
-RndTree::RndTree()
-{
-    pRoot == nullptr;
-}
+RndTree::RndTree(){}
 
 RndTree::~RndTree()
 {
@@ -63,129 +60,91 @@ Node* RndTree::FindNode(string val, Node *pHead)
     return pFind;
 }
 
-void RndTree::PrintTree(Node *pHead)
-{
-    if(!pHead && !pRoot)
-    {
-        printf("Tree is empty.\n");
-        return;
-    }
-    if(!pHead)
-    {
-        PrintTree(pRoot);
-        return;
-    }
-    printf("%s (has %d childs)\n", pHead->value.c_str(), pHead->childs.size());
-    vector<Node*>::iterator it = pHead->childs.begin();
-    while (it != pHead->childs.end() )
-    {
-        PrintTree(*it);
-        it++;
-    }
-}
 
-void RndTree::GetCommand(Node *pHead, Node **pParrent, string *pCommand)
+void RndTree::Serialize(Node *pHead, Node **pParrent, string *pCommand)
 {
     if(!pHead)
         return;
-    pCommand->append("V:");
+    pCommand->append(string(1, WRITE_NODE_COMMAND));
+    pCommand->append(":");
     pCommand->append(pHead->value);
-
-    pCommand->append(" C:");
-    pCommand->append(to_string(pHead->childs.size()));
     pCommand->append(";");
-
     for(int i = 0; i < pHead->childs.size(); i++)
     {
-        pCommand->append("D:");
-        pCommand->append(to_string(i));
-        pCommand->append("\n");
-        GetCommand(pHead->childs[i], nullptr, pCommand);
-        pCommand->append("U\n");
+        pCommand->append(string(1, DOWN_COMMAND));
+        pCommand->append(";");
+        pCommand->append(COMMAND_SEPARATOR);
+        Serialize(pHead->childs[i], nullptr, pCommand);
+        pCommand->append(string(1, UP_COMMAND));
+        pCommand->append(COMMAND_SEPARATOR);
     }
 }
 
-string RndTree::GetCommand()
+string RndTree::Serialize()
 {
     string* command = new string();
     if(!pRoot)
         return *command;
-    GetCommand(pRoot, &pRoot, command);
-    command->append("end;");
+    Serialize(pRoot, &pRoot, command);
+    command->append(END_COMMANDS);
     return *command;
 }
 
 Node* RndTree::BuildFrame(string *command, Node **pCurr, Node **pParr)
 {
     Node* pRoot;
-
-    while(command->compare("end;"))
-    {
-        int index = command->find_first_of('\n');
-        string subCommand = command->substr(0, index);
-        command->erase(0, index + 1);
-
-        /*if(!subCommand.compare("end;"))
-            return nullptr;*/
-
-        char commandSym = subCommand[0];
-        switch (commandSym)
+        while(command->compare(END_COMMANDS))
         {
-            case 'V'://vrite new node
+            int index = command->find_first_of(COMMAND_SEPARATOR);
+            string subCommand = command->substr(0, index);
+            command->erase(0, index + 1);
+            char commandSym = subCommand[0];
+            switch (commandSym)
             {
-                subCommand.erase(0, 2);
-                int tmpIndex = subCommand.find("C:");
-                string nodeValue =subCommand.substr(0, tmpIndex -1);
-
-                Node* pNew = new Node(nodeValue);
-                pRoot = pNew;
-                *pCurr = pNew;
-
-                subCommand.erase(0, tmpIndex +2);
-                tmpIndex = subCommand.find(';');
-                string cntString = subCommand.substr(0, tmpIndex);
-                int childs = atoi(cntString.c_str());
-
-                for(int i = 0; i < childs; i++)
-                {
-                    pNew->childs.push_back(nullptr);
-                }
-                subCommand.erase(0, tmpIndex +1);
-                commandSym = subCommand[0];
-                if(commandSym == 'D')//get deeper
+                case WRITE_NODE_COMMAND://write new node
                 {
                     subCommand.erase(0, 2);
-                    int index = atoi(subCommand.c_str());
-                    BuildFrame(command, &(pNew->childs[index]), &pNew);
+                    int tmpIndex = subCommand.find(";");
+                    string nodeValue =subCommand.substr(0, tmpIndex);
+
+                    Node* pNew = new Node(nodeValue);
+                    pRoot = pNew;
+                    *pCurr = pNew;
+
+                    subCommand.erase(0, tmpIndex + 1);
+                    commandSym = subCommand[0];
+                    if(commandSym == DOWN_COMMAND)//get deeper
+                    {
+                        pNew->childs.push_back(nullptr);
+                        BuildFrame(command, &(pNew->childs.back()), &pNew);
+                        break;
+                    }
+                    else if(commandSym == UP_COMMAND)//go to the upper level
+                    {
+                        return nullptr;
+                    }
+                }
+                case DOWN_COMMAND://go to child
+                {
+                    (*pCurr)->childs.push_back(nullptr);
+                    BuildFrame(command, &(*pCurr)->childs.back(), pCurr);
                     break;
                 }
-                else if(commandSym == 'U')//go to the upper level
+                case UP_COMMAND://return to upper level
                 {
                     return nullptr;
                 }
+                default://unknown kommand
+                    break;
             }
-            case 'D'://go to child
-            {
-                subCommand.erase(0, 2);
-                int index = atoi(subCommand.c_str());
-                BuildFrame(command, &(*pCurr)->childs[index], pCurr);
-                break;
-            }
-            case 'U'://return to upper level
-            {
-                return nullptr;
-            }
-            default://unknown kommand
-                break;
         }
-    }
-    return pRoot;
+        return pRoot;
 }
 
-Node* RndTree::BuildTree(string command)
+Node* RndTree::Deserialize(string command)
 {
     Node *pHead;
-    pRoot = BuildFrame(&command, &pHead, &pHead);
+    return pRoot = BuildFrame(&command, &pHead, &pHead);
 }
 
 void RndTree::PrettyPrint(Node *pHead, int *level, bool last)
@@ -202,7 +161,6 @@ void RndTree::PrettyPrint(Node *pHead, int *level, bool last)
         return;
     }
     string prefiks;
-
     for(int i = 0; i < *level; i++)
     {
         if(i == *level -1)

@@ -33,4 +33,5 @@ RndTree* ThreeTest::CreateRndThree(int *count, Node *node, RndTree *pThree)
            CreateRndThree(count, pTmp, pThree);
     }
     CreateRndThree(count, node, pThree);
+    return nullptr;
 }
